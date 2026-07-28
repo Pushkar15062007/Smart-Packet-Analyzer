@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Smart Packet Analyzer</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+
+<header class="header">
+
+    <h1> Smart Packet Analyzer</h1>
+
+    <p>Real-Time AI Powered Network Security Monitoring Dashboard</p>
+
+    <div class="theme-toggle">
+        <button id="themeBtn">🌙 Dark Mode</button>
+    </div>
+
+</header>
+
+<!-- ================= Dashboard ================= -->
+
+<div class="cards">
+
+    <div class="card">
+        <h2>Total Packets</h2>
+        <h1 id="packets">0</h1>
+    </div>
+
+    <div class="card">
+        <h2>Protocols</h2>
+        <h1 id="protocols">0</h1>
+    </div>
+
+    <div class="card">
+        <h2>AI Alerts</h2>
+        <h1 id="alerts">0</h1>
+    </div>
+
+    <div class="card">
+        <h2>Risk Level</h2>
+        <h1 id="status">LOW</h1>
+    </div>
+
+</div>
+
+<!-- ================= Security Overview ================= -->
+
+<div class="security-section">
+
+    <h2> Security Overview</h2>
+
+    <div class="security-grid">
+
+        <div class="security-card">
+            <h3>Security Score</h3>
+            <h1 id="securityScore">100%</h1>
+        </div>
+
+        <div class="security-card">
+            <h3>Network Health</h3>
+            <h1 id="networkHealth">Excellent</h1>
+        </div>
+
+        <div class="security-card">
+            <h3>Active Hosts</h3>
+            <h1 id="activeHosts">0</h1>
+        </div>
+
+        <div class="security-card">
+            <h3>Average Packet</h3>
+            <h1 id="avgPacket">0 B</h1>
+        </div>
+
+        <div class="security-card">
+            <h3>Top Host</h3>
+            <h1 id="topHost">-</h1>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= Charts ================= -->
+
+<div class="chart-grid">
+
+    <div class="chart-card">
+        <h2> Live Traffic</h2>
+        <canvas id="trafficChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h2> Protocol Distribution</h2>
+        <canvas id="protocolChart"></canvas>
+    </div>
+
+</div>
+
+<!-- ================= Packet Table ================= -->
+
+<div class="table-section">
+
+    <h2> Live Packet Table</h2>
+
+    <table>
+
+        <thead>
+
+        <tr>
+
+            <th>#</th>
+            <th>Time</th>
+            <th>Source</th>
+            <th>Destination</th>
+            <th>Protocol</th>
+            <th>Length</th>
+
+        </tr>
+
+        </thead>
+
+        <tbody id="packetTable">
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<!-- ================= AI Insights ================= -->
+
+<div class="ai-section">
+
+    <h2> AI Insights</h2>
+
+    <ul id="insights">
+
+    </ul>
+
+</div>
+
+<footer>
+
+    Smart Packet Analyzer | Version 3.2
+
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+
+</html>

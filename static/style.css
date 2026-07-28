@@ -1,0 +1,696 @@
+/* ===========================================
+   SMART PACKET ANALYZER
+   Version 3.2
+=========================================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+
+    background:#0f172a;
+
+    color:#ffffff;
+
+    font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+
+    transition:0.3s;
+
+}
+
+/* ===========================================
+   HEADER
+=========================================== */
+
+.header{
+
+    background:#1e293b;
+
+    padding:30px;
+
+    text-align:center;
+
+    border-bottom:3px solid #334155;
+
+}
+
+.header h1{
+
+    font-size:42px;
+
+    margin-bottom:10px;
+
+}
+
+.header p{
+
+    font-size:18px;
+
+    color:#94a3b8;
+
+}
+
+/* ===========================================
+   THEME BUTTON
+=========================================== */
+
+.theme-toggle{
+
+    margin-top:20px;
+
+}
+
+.theme-toggle button{
+
+    padding:12px 22px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:#3b82f6;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:15px;
+
+    font-weight:bold;
+
+    transition:.3s;
+
+}
+
+.theme-toggle button:hover{
+
+    background:#2563eb;
+
+    transform:translateY(-2px);
+
+}
+
+/* ===========================================
+   DASHBOARD CARDS
+=========================================== */
+
+.cards{
+
+    width:95%;
+
+    margin:30px auto;
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+    gap:20px;
+
+}
+
+.card{
+
+    background:#1e293b;
+
+    padding:25px;
+
+    border-radius:18px;
+
+    text-align:center;
+
+    box-shadow:0 0 15px rgba(0,0,0,.35);
+
+    transition:.3s;
+
+}
+
+.card:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:0 0 25px rgba(56,189,248,.45);
+
+}
+
+.card h2{
+
+    margin-bottom:15px;
+
+    color:#cbd5e1;
+
+}
+
+.card h1{
+
+    font-size:48px;
+
+}
+
+/* ===========================================
+   SECURITY OVERVIEW
+=========================================== */
+
+.security-section{
+
+    width:95%;
+
+    margin:35px auto;
+
+}
+
+.security-section h2{
+
+    margin-bottom:20px;
+
+    color:#38bdf8;
+
+}
+
+.security-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+    gap:20px;
+
+}
+
+.security-card{
+
+    background:#1e293b;
+
+    padding:25px;
+
+    border-radius:18px;
+
+    text-align:center;
+
+    border-top:5px solid #38bdf8;
+
+    box-shadow:0 0 15px rgba(0,0,0,.35);
+
+    transition:.3s;
+
+}
+
+.security-card:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:0 0 25px rgba(56,189,248,.45);
+
+}
+
+.security-card h3{
+
+    color:#cbd5e1;
+
+    margin-bottom:15px;
+
+}
+
+.security-card h1{
+
+    font-size:40px;
+
+    word-break:break-word;
+
+}
+/* ===========================================
+   CHART SECTION
+=========================================== */
+
+.chart-grid{
+
+    width:95%;
+
+    margin:35px auto;
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(420px,1fr));
+
+    gap:25px;
+
+}
+
+.chart-card{
+
+    background:#1e293b;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    box-shadow:0 0 15px rgba(0,0,0,.35);
+
+    transition:.3s;
+
+}
+
+.chart-card:hover{
+
+    transform:translateY(-5px);
+
+    box-shadow:0 0 25px rgba(56,189,248,.35);
+
+}
+
+.chart-card h2{
+
+    margin-bottom:20px;
+
+}
+
+.chart-card canvas{
+
+    width:100% !important;
+
+    height:320px !important;
+
+}
+
+/* ===========================================
+   PACKET TABLE
+=========================================== */
+
+.table-section{
+
+    width:95%;
+
+    margin:35px auto;
+
+    background:#1e293b;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    box-shadow:0 0 15px rgba(0,0,0,.35);
+
+}
+
+.table-section h2{
+
+    margin-bottom:20px;
+
+}
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+thead{
+
+    background:#334155;
+
+}
+
+th{
+
+    padding:15px;
+
+    text-align:left;
+
+}
+
+td{
+
+    padding:14px;
+
+    border-bottom:1px solid #334155;
+
+}
+
+tbody tr{
+
+    transition:.25s;
+
+}
+
+tbody tr:hover{
+
+    background:#243548;
+
+}
+
+/* ===========================================
+   AI INSIGHTS
+=========================================== */
+
+.ai-section{
+
+    width:95%;
+
+    margin:35px auto;
+
+    background:#1e293b;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    box-shadow:0 0 15px rgba(0,0,0,.35);
+
+}
+
+.ai-section h2{
+
+    margin-bottom:20px;
+
+}
+
+.ai-section ul{
+
+    list-style:none;
+
+}
+
+.ai-section li{
+
+    padding:12px;
+
+    margin-bottom:12px;
+
+    background:#243548;
+
+    border-left:5px solid #38bdf8;
+
+    border-radius:8px;
+
+}
+
+/* ===========================================
+   FOOTER
+=========================================== */
+
+footer{
+
+    text-align:center;
+
+    padding:25px;
+
+    color:#94a3b8;
+
+    margin-top:40px;
+
+}
+
+/* ===========================================
+   STATUS COLORS
+=========================================== */
+
+#status{
+
+    color:#22c55e;
+
+    transition:.3s;
+
+}
+
+#securityScore{
+
+    color:#22c55e;
+
+    transition:.3s;
+
+}
+
+#networkHealth{
+
+    color:#38bdf8;
+
+    transition:.3s;
+
+}
+
+.card,
+.security-card,
+.chart-card,
+.table-section,
+.ai-section,
+.header,
+footer{
+
+    transition:
+
+        background .3s,
+
+        color .3s,
+
+        box-shadow .3s,
+
+        border-color .3s;
+
+}
+/* ===========================================
+   LIGHT MODE
+=========================================== */
+
+body.light-mode{
+
+    background:#f4f6f9;
+
+    color:#111827;
+
+}
+
+body.light-mode .header{
+
+    background:#ffffff;
+
+    border-bottom:3px solid #d1d5db;
+
+}
+
+body.light-mode .header h1{
+
+    color:#111827;
+
+}
+
+body.light-mode .header p{
+
+    color:#4b5563;
+
+}
+
+/* Dashboard Cards */
+
+body.light-mode .card{
+
+    background:#ffffff;
+
+    color:#111827;
+
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
+
+}
+
+body.light-mode .card h2{
+
+    color:#4b5563;
+
+}
+
+/* Security Cards */
+
+body.light-mode .security-card{
+
+    background:#ffffff;
+
+    color:#111827;
+
+    border-top:5px solid #2563eb;
+
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
+
+}
+
+body.light-mode .security-card h3{
+
+    color:#4b5563;
+
+}
+
+/* Charts */
+
+body.light-mode .chart-card{
+
+    background:#ffffff;
+
+    color:#111827;
+
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
+
+}
+
+body.light-mode .chart-card h2{
+
+    color:#111827;
+
+}
+
+/* Packet Table */
+
+body.light-mode .table-section{
+
+    background:#ffffff;
+
+    color:#111827;
+
+}
+
+body.light-mode table{
+
+    color:#111827;
+
+}
+
+body.light-mode thead{
+
+    background:#e5e7eb;
+
+}
+
+body.light-mode th{
+
+    color:#111827;
+
+}
+
+body.light-mode td{
+
+    border-bottom:1px solid #d1d5db;
+
+}
+
+body.light-mode tbody tr:hover{
+
+    background:#f3f4f6;
+
+}
+
+/* AI Section */
+
+body.light-mode .ai-section{
+
+    background:#ffffff;
+
+    color:#111827;
+
+}
+
+body.light-mode .ai-section h2{
+
+    color:#111827;
+
+}
+
+body.light-mode .ai-section li{
+
+    background:#eef2ff;
+
+    color:#111827;
+
+    border-left:5px solid #2563eb;
+
+}
+
+/* Footer */
+
+body.light-mode footer{
+
+    color:#4b5563;
+
+}
+
+/* Status Colors */
+
+body.light-mode #status{
+
+    color:#16a34a;
+
+}
+
+body.light-mode #securityScore{
+
+    color:#16a34a;
+
+}
+
+body.light-mode #networkHealth{
+
+    color:#2563eb;
+
+}
+
+/* Button */
+
+body.light-mode .theme-toggle button{
+
+    background:#1e293b;
+
+    color:#ffffff;
+
+}
+
+body.light-mode .theme-toggle button:hover{
+
+    background:#0f172a;
+
+}
+
+/* ===========================================
+   RESPONSIVE
+=========================================== */
+
+@media (max-width:900px){
+
+    .chart-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+@media (max-width:700px){
+
+    .cards{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .security-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .header h1{
+
+        font-size:32px;
+
+    }
+
+    table{
+
+        font-size:14px;
+
+        display:block;
+
+        overflow-x:auto;
+
+    }
+
+}

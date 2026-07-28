@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+.env
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Python Cache
+.pytest_cache/
+
+# Distribution
+build/
+dist/
+
+# Environment
+.env.*
+
+# Packet Capture Files
+*.pcap
+*.pcapng
+
+# Temporary Files
+temp/
