@@ -6,128 +6,438 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Smart Packet Analyzer</title>
+    <title>Smart Packet Analyzer v5.0</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
 </head>
 
 <body>
 
+<!-- ================= Sidebar ================= -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+
+        <i class="fas fa-shield-halved"></i>
+
+        <h2>SPA</h2>
+
+    </div>
+
+    <div class="user-box">
+
+        <img src="https://ui-avatars.com/api/?name=Admin&background=2563eb&color=fff"
+             alt="User">
+
+        <h3>{{ username }}</h3>
+
+        <p>Administrator</p>
+
+    </div>
+
+    <ul class="menu">
+
+        <li class="active">
+            <a href="#">
+                <i class="fas fa-chart-line"></i>
+                Dashboard
+            </a>
+        </li>
+
+        <li>
+            <a href="#packetTable">
+                <i class="fas fa-network-wired"></i>
+                Live Packets
+            </a>
+        </li>
+
+        <li>
+            <a href="#trafficChart">
+                <i class="fas fa-chart-area"></i>
+                Analytics
+            </a>
+        </li>
+
+        <li>
+            <a href="#insights">
+                <i class="fas fa-brain"></i>
+                AI Insights
+            </a>
+        </li>
+
+        <li>
+            <a href="#filters">
+                <i class="fas fa-filter"></i>
+                Filters
+            </a>
+        </li>
+
+        <li>
+            <a href="#packetDetails">
+                <i class="fas fa-file-code"></i>
+                Packet Details
+            </a>
+        </li>
+
+        <li>
+            <a href="#hexViewer">
+                <i class="fas fa-terminal"></i>
+                Hex Viewer
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ url_for('logout') }}">
+                <i class="fas fa-right-from-bracket"></i>
+                Logout
+            </a>
+        </li>
+
+    </ul>
+
+</aside>
+
+<!-- ================= Main Content ================= -->
+
+<div class="main-content">
+
 <header class="header">
 
-    <h1> Smart Packet Analyzer</h1>
+    <div>
 
-    <p>Real-Time AI Powered Network Security Monitoring Dashboard</p>
+        <h1>Smart Packet Analyzer</h1>
 
-    <div class="theme-toggle">
-        <button id="themeBtn">🌙 Dark Mode</button>
+        <p>AI Powered Network Security Monitoring Dashboard</p>
+
+    </div>
+
+    <div class="header-right">
+
+        <button id="themeBtn">
+
+            🌙 Dark Mode
+
+        </button>
+
     </div>
 
 </header>
 
-<!-- ================= Dashboard ================= -->
+<!-- ================= Dashboard Cards ================= -->
 
-<div class="cards">
+<section class="cards">
 
     <div class="card">
-        <h2>Total Packets</h2>
+
+        <i class="fas fa-box"></i>
+
+        <h3>Total Packets</h3>
+
         <h1 id="packets">0</h1>
+
     </div>
 
     <div class="card">
-        <h2>Protocols</h2>
+
+        <i class="fas fa-layer-group"></i>
+
+        <h3>Protocols</h3>
+
         <h1 id="protocols">0</h1>
+
     </div>
 
     <div class="card">
-        <h2>AI Alerts</h2>
+
+        <i class="fas fa-triangle-exclamation"></i>
+
+        <h3>AI Alerts</h3>
+
         <h1 id="alerts">0</h1>
+
     </div>
 
     <div class="card">
-        <h2>Risk Level</h2>
+
+        <i class="fas fa-shield"></i>
+
+        <h3>Risk Level</h3>
+
         <h1 id="status">LOW</h1>
+
     </div>
 
-</div>
-
+</section>
 <!-- ================= Security Overview ================= -->
 
-<div class="security-section">
+<section class="security-section">
 
-    <h2> Security Overview</h2>
+    <h2>
+        <i class="fas fa-shield-virus"></i>
+        Security Overview
+    </h2>
 
     <div class="security-grid">
 
         <div class="security-card">
+
+            <i class="fas fa-shield-check"></i>
+
             <h3>Security Score</h3>
+
             <h1 id="securityScore">100%</h1>
+
         </div>
 
         <div class="security-card">
+
+            <i class="fas fa-heart-pulse"></i>
+
             <h3>Network Health</h3>
+
             <h1 id="networkHealth">Excellent</h1>
+
         </div>
 
         <div class="security-card">
+
+            <i class="fas fa-desktop"></i>
+
             <h3>Active Hosts</h3>
+
             <h1 id="activeHosts">0</h1>
+
         </div>
 
         <div class="security-card">
+
+            <i class="fas fa-database"></i>
+
             <h3>Average Packet</h3>
+
             <h1 id="avgPacket">0 B</h1>
+
         </div>
 
         <div class="security-card">
+
+            <i class="fas fa-network-wired"></i>
+
             <h3>Top Host</h3>
+
             <h1 id="topHost">-</h1>
+
         </div>
 
     </div>
 
-</div>
+</section>
+
+<!-- ================= Bandwidth ================= -->
+
+<section class="bandwidth-section">
+
+    <h2>
+
+        <i class="fas fa-gauge-high"></i>
+
+        Live Network Bandwidth
+
+    </h2>
+
+    <div class="bandwidth-grid">
+
+        <div class="bandwidth-card download">
+
+            <i class="fas fa-download"></i>
+
+            <h3>Download Speed</h3>
+
+            <h1 id="downloadSpeed">
+
+                0 Mbps
+
+            </h1>
+
+        </div>
+
+        <div class="bandwidth-card upload">
+
+            <i class="fas fa-upload"></i>
+
+            <h3>Upload Speed</h3>
+
+            <h1 id="uploadSpeed">
+
+                0 Mbps
+
+            </h1>
+
+        </div>
+
+        <div class="bandwidth-card">
+
+            <i class="fas fa-wave-square"></i>
+
+            <h3>Total Bandwidth</h3>
+
+            <h1 id="totalBandwidth">
+
+                0 Mbps
+
+            </h1>
+
+        </div>
+
+    </div>
+
+</section>
 
 <!-- ================= Charts ================= -->
 
-<div class="chart-grid">
+<section class="chart-grid">
 
     <div class="chart-card">
-        <h2> Live Traffic</h2>
+
+        <div class="chart-header">
+
+            <h2>
+
+                <i class="fas fa-chart-line"></i>
+
+                Live Traffic
+
+            </h2>
+
+        </div>
+
         <canvas id="trafficChart"></canvas>
+
     </div>
 
     <div class="chart-card">
-        <h2> Protocol Distribution</h2>
+
+        <div class="chart-header">
+
+            <h2>
+
+                <i class="fas fa-chart-pie"></i>
+
+                Protocol Distribution
+
+            </h2>
+
+        </div>
+
         <canvas id="protocolChart"></canvas>
+
     </div>
 
-</div>
+</section>
 
-<!-- ================= Packet Table ================= -->
+<!-- ================= Filter Section ================= -->
 
-<div class="table-section">
+<section class="filter-section" id="filters">
 
-    <h2> Live Packet Table</h2>
+    <h2>
+
+        <i class="fas fa-filter"></i>
+
+        Packet Filters
+
+    </h2>
+
+    <div class="filter-grid">
+
+        <select id="protocolFilter">
+
+            <option value="ALL">All Protocols</option>
+
+            <option>TCP</option>
+
+            <option>UDP</option>
+
+            <option>HTTP</option>
+
+            <option>HTTPS</option>
+
+            <option>DNS</option>
+
+            <option>ICMP</option>
+
+        </select>
+
+        <input
+            type="text"
+            id="sourceFilter"
+            placeholder="Source IP">
+
+        <input
+            type="text"
+            id="destinationFilter"
+            placeholder="Destination IP">
+
+        <input
+            type="number"
+            id="portFilter"
+            placeholder="Port">
+
+        <button id="applyFilter">
+
+            <i class="fas fa-search"></i>
+
+            Apply Filter
+
+        </button>
+
+    </div>
+
+</section>
+<!-- ================= Live Packet Table ================= -->
+
+<section class="table-section">
+
+    <div class="table-header">
+
+        <h2>
+
+            <i class="fas fa-network-wired"></i>
+
+            Live Packet Table
+
+        </h2>
+
+        <input
+            type="text"
+            id="packetSearch"
+            placeholder="Search IP / Protocol / Port">
+
+    </div>
 
     <table>
 
         <thead>
 
-        <tr>
+            <tr>
 
-            <th>#</th>
-            <th>Time</th>
-            <th>Source</th>
-            <th>Destination</th>
-            <th>Protocol</th>
-            <th>Length</th>
+                <th>#</th>
+                <th>Time</th>
+                <th>Source</th>
+                <th>Destination</th>
+                <th>Protocol</th>
+                <th>Port</th>
+                <th>Length</th>
+                <th>Risk</th>
 
-        </tr>
+            </tr>
 
         </thead>
 
@@ -137,25 +447,178 @@
 
     </table>
 
-</div>
+</section>
+
+<!-- ================= Packet Details ================= -->
+
+<section class="details-section" id="packetDetails">
+
+    <h2>
+
+        <i class="fas fa-file-code"></i>
+
+        Packet Details
+
+    </h2>
+
+    <div class="details-grid">
+
+        <div class="details-card">
+
+            <h3>Ethernet</h3>
+
+<pre id="ethernetData">
+
+Destination MAC :
+Source MAC :
+Type :
+
+</pre>
+
+        </div>
+
+        <div class="details-card">
+
+            <h3>IPv4</h3>
+
+<pre id="ipData">
+
+Source IP :
+Destination IP :
+TTL :
+Protocol :
+
+</pre>
+
+        </div>
+
+        <div class="details-card">
+
+            <h3>TCP / UDP</h3>
+
+<pre id="transportData">
+
+Source Port :
+Destination Port :
+Flags :
+Window :
+
+</pre>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ================= Hex Viewer ================= -->
+
+<section class="hex-section" id="hexViewer">
+
+    <h2>
+
+        <i class="fas fa-terminal"></i>
+
+        Packet Hex Viewer
+
+    </h2>
+
+<pre id="hexDump">
+
+Select a packet to view hexadecimal data...
+
+</pre>
+
+</section>
+
+<!-- ================= Deep Packet Inspection ================= -->
+
+<section class="dpi-section">
+
+    <h2>
+
+        <i class="fas fa-microscope"></i>
+
+        Deep Packet Inspection
+
+    </h2>
+
+    <div class="dpi-grid">
+
+        <div class="dpi-card">
+
+            <h3>HTTP</h3>
+
+<pre id="httpData">
+
+Method :
+Host :
+User-Agent :
+URI :
+
+</pre>
+
+        </div>
+
+        <div class="dpi-card">
+
+            <h3>DNS</h3>
+
+<pre id="dnsData">
+
+Query :
+Response :
+Record Type :
+
+</pre>
+
+        </div>
+
+        <div class="dpi-card">
+
+            <h3>TLS / HTTPS</h3>
+
+<pre id="tlsData">
+
+Version :
+SNI :
+Cipher :
+
+</pre>
+
+        </div>
+
+    </div>
+
+</section>
 
 <!-- ================= AI Insights ================= -->
 
-<div class="ai-section">
+<section class="ai-section">
 
-    <h2> AI Insights</h2>
+    <h2>
+
+        <i class="fas fa-brain"></i>
+
+        AI Security Insights
+
+    </h2>
 
     <ul id="insights">
 
     </ul>
 
-</div>
+</section>
 
 <footer>
 
-    Smart Packet Analyzer | Version 3.2
+    Smart Packet Analyzer v5.0 |
+    AI Powered Network Monitoring |
+    Flask • Scapy • Python • Chart.js
 
 </footer>
+
+</div>
 
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 

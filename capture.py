@@ -1,267 +1,664 @@
-from scapy.all import sniff, IP
-from datetime import datetime
+"""
+===========================================================
+SMART PACKET ANALYZER v5.0
+CAPTURE ENGINE
+===========================================================
+"""
+
+from scapy.all import *
 from collections import Counter
-import statistics
+from datetime import datetime
+
 import json
 import os
+import psutil
+import threading
+import time
 
-from network.protocols import protocol_name
-from ai.detector import detect_threat
-from ai.risk import calculate_risk
+# ===========================================================
+# CONFIGURATION
+# ===========================================================
 
 DATA_FILE = "data/packets.json"
 
-os.makedirs("data", exist_ok=True)
-
-# ===========================
-# Global Data
-# ===========================
+MAX_PACKETS = 100
 
 packets = []
-packet_count = 0
-protocols = set()
 
-current_alerts = []
-current_risk = "LOW"
+protocol_counter = Counter()
 
-protocol_counter = {
-    "TCP": 0,
-    "UDP": 0,
-    "HTTP": 0,
-    "HTTPS": 0,
-    "DNS": 0,
-    "ICMP": 0,
-    "OTHER": 0
+total_packets = 0
+
+alerts = 0
+
+lock = threading.Lock()
+
+# ===========================================================
+# BANDWIDTH
+# ===========================================================
+
+previous = psutil.net_io_counters()
+
+bandwidth = {
+
+    "download": 0,
+
+    "upload": 0,
+
+    "total": 0
+
 }
 
-host_counter = Counter()
 
-packet_sizes = []
+def update_bandwidth():
 
-total_bytes = 0
+    global previous
 
-security_score = 100
+    while True:
 
+        current = psutil.net_io_counters()
 
-# ===========================
-# Save Dashboard Data
-# ===========================
+        download = (current.bytes_recv - previous.bytes_recv) / 1024 / 1024
 
-def save_data():
+        upload = (current.bytes_sent - previous.bytes_sent) / 1024 / 1024
 
-    global security_score
+        bandwidth["download"] = round(download, 2)
 
-    # -----------------------
-    # Average Packet Size
-    # -----------------------
+        bandwidth["upload"] = round(upload, 2)
 
-    avg_packet = 0
+        bandwidth["total"] = round(download + upload, 2)
 
-    if packet_sizes:
-        avg_packet = int(statistics.mean(packet_sizes))
+        previous = current
 
-    # -----------------------
-    # Network Health
-    # -----------------------
+        time.sleep(1)
 
-    if security_score >= 90:
-        network_health = "Excellent"
-
-    elif security_score >= 75:
-        network_health = "Good"
-
-    elif security_score >= 50:
-        network_health = "Warning"
-
-    else:
-        network_health = "Critical"
-
-    # -----------------------
-    # Dashboard Cards
-    # -----------------------
-
-    dashboard = {
-
-        "packets": packet_count,
-
-        "protocols": len(protocols),
-
-        "alerts": len(current_alerts),
-
-        "status": current_risk
-
-    }
-
-    # -----------------------
-    # Security Dashboard
-    # -----------------------
-
-    security = {
-
-        "score": security_score,
-
-        "health": network_health,
-
-        "active_hosts": len(host_counter),
-
-        "avg_packet": avg_packet,
-
-        "top_host": host_counter.most_common(1)[0][0] if host_counter else "-"
-
-    }
-
-    # -----------------------
-    # AI Insights
-    # -----------------------
-
-    if current_alerts:
-
-        insights = [f" {x}" for x in current_alerts]
-
-    else:
-
-        insights = [
-
-            "✅ Network Operating Normally",
-
-            f"Total Packets : {packet_count}",
-
-            f"Protocols : {', '.join(sorted(protocols))}",
-
-            f"Average Packet : {avg_packet} Bytes"
-
-        ]
-
-    # -----------------------
-    # Final JSON
-    # -----------------------
-
-    data = {
-
-        "dashboard": dashboard,
-
-        "security": security,
-
-        "protocols": protocol_counter,
-
-        "packets": packets[-50:],
-
-        "insights": insights
-
-    }
-
-    with open(DATA_FILE, "w") as f:
-
-        json.dump(data, f, indent=4)
+# ===========================================================
+# PROTOCOL DETECTION
+# ===========================================================
 
 
-# ===========================
-# Packet Processing
-# ===========================
+def detect_protocol(packet):
 
-def process_packet(packet):
+    if packet.haslayer(TCP):
 
-    global packet_count
-    global current_alerts
-    global current_risk
-    global total_bytes
-    global security_score
+        sport = packet[TCP].sport
 
-    if not packet.haslayer(IP):
-        return
+        dport = packet[TCP].dport
 
-    proto = protocol_name(packet)
+        if 80 in (sport, dport):
 
-    packet_count += 1
+            return "HTTP"
 
-    protocols.add(proto)
+        if 443 in (sport, dport):
 
-    protocol_counter[proto] += 1
+            return "HTTPS"
 
-    total_bytes += len(packet)
+        return "TCP"
 
-    packet_sizes.append(len(packet))
+    if packet.haslayer(UDP):
+
+        sport = packet[UDP].sport
+
+        dport = packet[UDP].dport
+
+        if 53 in (sport, dport):
+
+            return "DNS"
+
+        return "UDP"
+
+    if packet.haslayer(ICMP):
+
+        return "ICMP"
+
+    return "OTHER"
+
+# ===========================================================
+# AI RISK DETECTION
+# ===========================================================
+
+
+def detect_risk(packet):
+
+    if packet.haslayer(TCP):
+
+        flags = str(packet[TCP].flags)
+
+        if "S" in flags and "A" not in flags:
+
+            return "MEDIUM"
+
+    if packet.haslayer(ICMP):
+
+        return "LOW"
+
+    return "LOW"
+
+# ===========================================================
+# HEX DUMP
+# ===========================================================
+
+
+def packet_hex(packet):
+
+    try:
+
+        return bytes(packet).hex(" ")
+
+    except Exception:
+
+        return ""
+# ===========================================================
+# PACKET PARSER
+# ===========================================================
+
+def parse_packet(packet):
+
+    protocol = detect_protocol(packet)
+
+    risk = detect_risk(packet)
 
     packet_data = {
 
         "time": datetime.now().strftime("%H:%M:%S"),
 
-        "src": packet[IP].src,
+        "src": "-",
 
-        "dst": packet[IP].dst,
+        "dst": "-",
 
-        "protocol": proto,
+        "protocol": protocol,
 
-        "length": len(packet)
+        "length": len(packet),
+
+        "risk": risk,
+
+        "port": "-",
+
+        "src_port": "-",
+
+        "src_mac": "-",
+
+        "dst_mac": "-",
+
+        "eth_type": "-",
+
+        "ttl": "-",
+
+        "flags": "-",
+
+        "window": "-",
+
+        "hex": packet_hex(packet),
+
+        # HTTP
+
+        "http_method": "-",
+
+        "http_host": "-",
+
+        "http_uri": "-",
+
+        "user_agent": "-",
+
+        # DNS
+
+        "dns_query": "-",
+
+        "dns_response": "-",
+
+        "dns_type": "-",
+
+        # TLS
+
+        "tls_version": "-",
+
+        "sni": "-",
+
+        "cipher": "-"
 
     }
 
-    packets.append(packet_data)
+    # =======================================================
+    # Ethernet Layer
+    # =======================================================
 
-    host_counter[packet_data["src"]] += 1
-    host_counter[packet_data["dst"]] += 1
+    if packet.haslayer(Ether):
 
-    # -----------------------
-    # AI Detection
-    # -----------------------
+        eth = packet[Ether]
 
-    current_alerts = detect_threat(packet_data)
+        packet_data["src_mac"] = eth.src
 
-    current_risk = calculate_risk(current_alerts)
+        packet_data["dst_mac"] = eth.dst
 
-    # -----------------------
-    # Security Score
-    # -----------------------
+        packet_data["eth_type"] = hex(eth.type)
 
-    security_score = 100
+    # =======================================================
+    # IP Layer
+    # =======================================================
 
-    penalties = {
+    if packet.haslayer(IP):
 
-        "Large Packet": 5,
+        ip = packet[IP]
 
-        "Unknown": 10,
+        packet_data["src"] = ip.src
 
-        "DNS Flood": 20,
+        packet_data["dst"] = ip.dst
 
-        "HTTPS": 15,
+        packet_data["ttl"] = ip.ttl
 
-        "High Traffic": 20
+    # =======================================================
+    # TCP
+    # =======================================================
+
+    if packet.haslayer(TCP):
+
+        tcp = packet[TCP]
+
+        packet_data["src_port"] = tcp.sport
+
+        packet_data["port"] = tcp.dport
+
+        packet_data["flags"] = str(tcp.flags)
+
+        packet_data["window"] = tcp.window
+
+    # =======================================================
+    # UDP
+    # =======================================================
+
+    elif packet.haslayer(UDP):
+
+        udp = packet[UDP]
+
+        packet_data["src_port"] = udp.sport
+
+        packet_data["port"] = udp.dport
+
+    # =======================================================
+    # DNS
+    # =======================================================
+
+    if packet.haslayer(DNS):
+
+        dns = packet[DNS]
+
+        try:
+
+            if dns.qd:
+
+                packet_data["dns_query"] = dns.qd.qname.decode(
+                    errors="ignore"
+                )
+
+                packet_data["dns_type"] = dns.qd.qtype
+
+        except Exception:
+
+            pass
+
+        try:
+
+            if dns.an:
+
+                packet_data["dns_response"] = str(dns.an.rdata)
+
+        except Exception:
+
+            pass
+
+    # =======================================================
+    # HTTP (Raw Payload)
+    # =======================================================
+
+    if packet.haslayer(Raw):
+
+        try:
+
+            payload = packet[Raw].load.decode(
+                errors="ignore"
+            )
+
+            lines = payload.split("\r\n")
+
+            if len(lines):
+
+                first = lines[0]
+
+                methods = [
+
+                    "GET",
+
+                    "POST",
+
+                    "PUT",
+
+                    "DELETE",
+
+                    "HEAD",
+
+                    "OPTIONS",
+
+                    "PATCH"
+
+                ]
+
+                for method in methods:
+
+                    if first.startswith(method):
+
+                        packet_data["http_method"] = method
+
+                        parts = first.split()
+
+                        if len(parts) > 1:
+
+                            packet_data["http_uri"] = parts[1]
+
+                        break
+
+            for line in lines:
+
+                lower = line.lower()
+
+                if lower.startswith("host:"):
+
+                    packet_data["http_host"] = line.split(
+                        ":",1
+                    )[1].strip()
+
+                elif lower.startswith("user-agent:"):
+
+                    packet_data["user_agent"] = line.split(
+                        ":",1
+                    )[1].strip()
+
+        except Exception:
+
+            pass
+
+    # =======================================================
+    # TLS Placeholder
+    # =======================================================
+
+    if protocol == "HTTPS":
+
+        packet_data["tls_version"] = "TLS"
+
+        packet_data["sni"] = "Encrypted"
+
+        packet_data["cipher"] = "Encrypted"
+
+    return packet_data
+# ===========================================================
+# PACKET HANDLER
+# ===========================================================
+
+def process_packet(packet):
+
+    global total_packets
+    global alerts
+
+    try:
+
+        packet_data = parse_packet(packet)
+
+        with lock:
+
+            packets.append(packet_data)
+
+            if len(packets) > MAX_PACKETS:
+                packets.pop(0)
+
+            total_packets += 1
+
+            protocol_counter[packet_data["protocol"]] += 1
+
+            if packet_data["risk"] in ["HIGH", "CRITICAL"]:
+                alerts += 1
+
+            save_data()
+
+    except Exception as e:
+
+        print("Packet Processing Error:", e)
+
+# ===========================================================
+# SAVE DASHBOARD DATA
+# ===========================================================
+
+def save_data():
+
+    protocol_counts = {
+
+        "TCP": protocol_counter.get("TCP", 0),
+        "UDP": protocol_counter.get("UDP", 0),
+        "HTTP": protocol_counter.get("HTTP", 0),
+        "HTTPS": protocol_counter.get("HTTPS", 0),
+        "DNS": protocol_counter.get("DNS", 0),
+        "ICMP": protocol_counter.get("ICMP", 0),
+        "OTHER": protocol_counter.get("OTHER", 0)
 
     }
 
-    for alert in current_alerts:
+    active_hosts = len({
 
-        for keyword, penalty in penalties.items():
+        p["src"]
 
-            if keyword in alert:
+        for p in packets
 
-                security_score -= penalty
+        if p["src"] != "-"
 
-    security_score = max(0, security_score)
+    })
 
-    save_data()
+    avg_packet = 0
 
-    print(
-        f"[{packet_count:5}] "
-        f"{packet_data['src']} -> "
-        f"{packet_data['dst']} | "
-        f"{packet_data['protocol']} | "
-        f"{packet_data['length']} Bytes | "
-        f"Risk: {current_risk} | "
-        f"Security: {security_score}%"
+    if packets:
+
+        avg_packet = round(
+
+            sum(p["length"] for p in packets) / len(packets),
+
+            2
+
+        )
+
+    top_host = "-"
+
+    if packets:
+
+        host_counter = Counter(
+
+            p["src"]
+
+            for p in packets
+
+            if p["src"] != "-"
+
+        )
+
+        if host_counter:
+
+            top_host = host_counter.most_common(1)[0][0]
+
+    security_score = max(
+
+        0,
+
+        100 - alerts
+
     )
 
+    network_health = "Healthy"
 
-# ===========================
-# Start Sniffer
-# ===========================
+    if alerts > 20:
 
-print("=" * 70)
-print(" Smart Packet Analyzer Version 3.2")
-print("Real-Time Network Security Monitoring Started")
-print("=" * 70)
+        network_health = "Critical"
 
-sniff(
-    prn=process_packet,
-    store=False
-)
+    elif alerts > 10:
+
+        network_health = "Warning"
+
+    dashboard = {
+
+        "dashboard": {
+
+            "packets": total_packets,
+
+            "protocols": len(
+
+                [
+
+                    k for k, v in protocol_counter.items()
+
+                    if v > 0
+
+                ]
+
+            ),
+
+            "alerts": alerts,
+
+            "status": "Monitoring"
+
+        },
+
+        "security": {
+
+            "score": security_score,
+
+            "health": network_health,
+
+            "active_hosts": active_hosts,
+
+            "avg_packet": avg_packet,
+
+            "top_host": top_host
+
+        },
+
+        "bandwidth": bandwidth,
+
+        "protocols": protocol_counts,
+
+        "packets": packets,
+
+        "insights": [
+
+            {
+
+                "title": "Traffic",
+
+                "message":
+
+                f"Captured {total_packets} packets."
+
+            },
+
+            {
+
+                "title": "Threats",
+
+                "message":
+
+                f"{alerts} suspicious packets detected."
+
+            },
+
+            {
+
+                "title": "Top Protocol",
+
+                "message":
+
+                max(
+
+                    protocol_counts,
+
+                    key=protocol_counts.get
+
+                )
+
+            }
+
+        ]
+
+    }
+
+    os.makedirs(
+
+        os.path.dirname(DATA_FILE),
+
+        exist_ok=True
+
+    )
+
+    with open(
+
+        DATA_FILE,
+
+        "w"
+
+    ) as f:
+
+        json.dump(
+
+            dashboard,
+
+            f,
+
+            indent=4
+
+        )
+
+# ===========================================================
+# START SNIFFING
+# ===========================================================
+
+def sniff_packets():
+
+    sniff(
+
+        prn=process_packet,
+
+        store=False
+
+    )
+
+# ===========================================================
+# START CAPTURE ENGINE
+# ===========================================================
+
+def start_capture():
+
+    threading.Thread(
+
+        target=update_bandwidth,
+
+        daemon=True
+
+    ).start()
+
+    threading.Thread(
+
+        target=sniff_packets,
+
+        daemon=True
+
+    ).start()
+
+    print("===================================")
+    print(" Smart Packet Analyzer Started")
+    print(" Capturing Network Traffic...")
+    print("===================================")
+
+# ===========================================================
+# MAIN
+# ===========================================================
+
+if __name__ == "__main__":
+
+    start_capture()
+
+    while True:
+
+        time.sleep(1)
