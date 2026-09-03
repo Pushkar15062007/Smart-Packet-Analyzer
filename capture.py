@@ -5,7 +5,17 @@ CAPTURE ENGINE
 ===========================================================
 """
 
-from scapy.all import *
+from scapy.all import (
+    sniff,
+    TCP,
+    UDP,
+    ICMP,
+    Ether,
+    IP,
+    DNS,
+    Raw
+)
+
 from collections import Counter
 from datetime import datetime
 
@@ -14,6 +24,9 @@ import os
 import psutil
 import threading
 import time
+
+from database import get_connection, initialize_database
+
 
 # ===========================================================
 # CONFIGURATION
@@ -33,6 +46,7 @@ alerts = 0
 
 lock = threading.Lock()
 
+
 # ===========================================================
 # BANDWIDTH
 # ===========================================================
@@ -40,13 +54,9 @@ lock = threading.Lock()
 previous = psutil.net_io_counters()
 
 bandwidth = {
-
     "download": 0,
-
     "upload": 0,
-
     "total": 0
-
 }
 
 
@@ -56,33 +66,45 @@ def update_bandwidth():
 
     while True:
 
-        current = psutil.net_io_counters()
+        try:
 
-        download = (current.bytes_recv - previous.bytes_recv) / 1024 / 1024
+            current = psutil.net_io_counters()
 
-        upload = (current.bytes_sent - previous.bytes_sent) / 1024 / 1024
+            download = (
+                current.bytes_recv - previous.bytes_recv
+            ) / 1024 / 1024
 
-        bandwidth["download"] = round(download, 2)
+            upload = (
+                current.bytes_sent - previous.bytes_sent
+            ) / 1024 / 1024
 
-        bandwidth["upload"] = round(upload, 2)
+            bandwidth["download"] = round(download, 2)
 
-        bandwidth["total"] = round(download + upload, 2)
+            bandwidth["upload"] = round(upload, 2)
 
-        previous = current
+            bandwidth["total"] = round(
+                download + upload,
+                2
+            )
+
+            previous = current
+
+        except Exception as e:
+
+            print("Bandwidth Error:", e)
 
         time.sleep(1)
+
 
 # ===========================================================
 # PROTOCOL DETECTION
 # ===========================================================
-
 
 def detect_protocol(packet):
 
     if packet.haslayer(TCP):
 
         sport = packet[TCP].sport
-
         dport = packet[TCP].dport
 
         if 80 in (sport, dport):
@@ -95,10 +117,10 @@ def detect_protocol(packet):
 
         return "TCP"
 
+
     if packet.haslayer(UDP):
 
         sport = packet[UDP].sport
-
         dport = packet[UDP].dport
 
         if 53 in (sport, dport):
@@ -107,16 +129,18 @@ def detect_protocol(packet):
 
         return "UDP"
 
+
     if packet.haslayer(ICMP):
 
         return "ICMP"
 
+
     return "OTHER"
+
 
 # ===========================================================
 # AI RISK DETECTION
 # ===========================================================
-
 
 def detect_risk(packet):
 
@@ -128,16 +152,18 @@ def detect_risk(packet):
 
             return "MEDIUM"
 
+
     if packet.haslayer(ICMP):
 
         return "LOW"
 
+
     return "LOW"
+
 
 # ===========================================================
 # HEX DUMP
 # ===========================================================
-
 
 def packet_hex(packet):
 
@@ -148,6 +174,8 @@ def packet_hex(packet):
     except Exception:
 
         return ""
+
+
 # ===========================================================
 # PACKET PARSER
 # ===========================================================
@@ -157,6 +185,7 @@ def parse_packet(packet):
     protocol = detect_protocol(packet)
 
     risk = detect_risk(packet)
+
 
     packet_data = {
 
@@ -190,6 +219,7 @@ def parse_packet(packet):
 
         "hex": packet_hex(packet),
 
+
         # HTTP
 
         "http_method": "-",
@@ -200,6 +230,7 @@ def parse_packet(packet):
 
         "user_agent": "-",
 
+
         # DNS
 
         "dns_query": "-",
@@ -207,6 +238,7 @@ def parse_packet(packet):
         "dns_response": "-",
 
         "dns_type": "-",
+
 
         # TLS
 
@@ -217,6 +249,7 @@ def parse_packet(packet):
         "cipher": "-"
 
     }
+
 
     # =======================================================
     # Ethernet Layer
@@ -232,6 +265,7 @@ def parse_packet(packet):
 
         packet_data["eth_type"] = hex(eth.type)
 
+
     # =======================================================
     # IP Layer
     # =======================================================
@@ -245,6 +279,7 @@ def parse_packet(packet):
         packet_data["dst"] = ip.dst
 
         packet_data["ttl"] = ip.ttl
+
 
     # =======================================================
     # TCP
@@ -262,6 +297,7 @@ def parse_packet(packet):
 
         packet_data["window"] = tcp.window
 
+
     # =======================================================
     # UDP
     # =======================================================
@@ -274,6 +310,7 @@ def parse_packet(packet):
 
         packet_data["port"] = udp.dport
 
+
     # =======================================================
     # DNS
     # =======================================================
@@ -282,12 +319,15 @@ def parse_packet(packet):
 
         dns = packet[DNS]
 
+
         try:
 
             if dns.qd:
 
-                packet_data["dns_query"] = dns.qd.qname.decode(
-                    errors="ignore"
+                packet_data["dns_query"] = (
+                    dns.qd.qname.decode(
+                        errors="ignore"
+                    )
                 )
 
                 packet_data["dns_type"] = dns.qd.qtype
@@ -296,15 +336,19 @@ def parse_packet(packet):
 
             pass
 
+
         try:
 
             if dns.an:
 
-                packet_data["dns_response"] = str(dns.an.rdata)
+                packet_data["dns_response"] = (
+                    str(dns.an.rdata)
+                )
 
         except Exception:
 
             pass
+
 
     # =======================================================
     # HTTP (Raw Payload)
@@ -319,6 +363,7 @@ def parse_packet(packet):
             )
 
             lines = payload.split("\r\n")
+
 
             if len(lines):
 
@@ -342,6 +387,7 @@ def parse_packet(packet):
 
                 ]
 
+
                 for method in methods:
 
                     if first.startswith(method):
@@ -350,31 +396,37 @@ def parse_packet(packet):
 
                         parts = first.split()
 
+
                         if len(parts) > 1:
 
                             packet_data["http_uri"] = parts[1]
 
                         break
 
+
             for line in lines:
 
                 lower = line.lower()
 
+
                 if lower.startswith("host:"):
 
-                    packet_data["http_host"] = line.split(
-                        ":",1
-                    )[1].strip()
+                    packet_data["http_host"] = (
+                        line.split(":", 1)[1].strip()
+                    )
+
 
                 elif lower.startswith("user-agent:"):
 
-                    packet_data["user_agent"] = line.split(
-                        ":",1
-                    )[1].strip()
+                    packet_data["user_agent"] = (
+                        line.split(":", 1)[1].strip()
+                    )
+
 
         except Exception:
 
             pass
+
 
     # =======================================================
     # TLS Placeholder
@@ -388,7 +440,121 @@ def parse_packet(packet):
 
         packet_data["cipher"] = "Encrypted"
 
+
     return packet_data
+
+
+# ===========================================================
+# SAVE PACKET TO SQLITE DATABASE
+# ===========================================================
+
+def save_packet_to_database(packet_data):
+
+    try:
+
+        connection = get_connection()
+
+        cursor = connection.cursor()
+
+
+        cursor.execute("""
+            INSERT INTO packets (
+                time,
+                src,
+                dst,
+                protocol,
+                length,
+                risk,
+                port,
+                src_port,
+                src_mac,
+                dst_mac,
+                eth_type,
+                ttl,
+                flags,
+                window,
+                hex,
+                http_method,
+                http_host,
+                http_uri,
+                user_agent,
+                dns_query,
+                dns_response,
+                dns_type,
+                tls_version,
+                sni,
+                cipher
+            )
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?
+            )
+        """, (
+
+            packet_data["time"],
+
+            packet_data["src"],
+
+            packet_data["dst"],
+
+            packet_data["protocol"],
+
+            packet_data["length"],
+
+            packet_data["risk"],
+
+            str(packet_data["port"]),
+
+            str(packet_data["src_port"]),
+
+            packet_data["src_mac"],
+
+            packet_data["dst_mac"],
+
+            packet_data["eth_type"],
+
+            str(packet_data["ttl"]),
+
+            packet_data["flags"],
+
+            str(packet_data["window"]),
+
+            packet_data["hex"],
+
+            packet_data["http_method"],
+
+            packet_data["http_host"],
+
+            packet_data["http_uri"],
+
+            packet_data["user_agent"],
+
+            packet_data["dns_query"],
+
+            packet_data["dns_response"],
+
+            str(packet_data["dns_type"]),
+
+            packet_data["tls_version"],
+
+            packet_data["sni"],
+
+            packet_data["cipher"]
+
+        ))
+
+
+        connection.commit()
+
+        connection.close()
+
+
+    except Exception as e:
+
+        print("SQLite Save Error:", e)
+
+
 # ===========================================================
 # PACKET HANDLER
 # ===========================================================
@@ -396,49 +562,116 @@ def parse_packet(packet):
 def process_packet(packet):
 
     global total_packets
+
     global alerts
+
 
     try:
 
         packet_data = parse_packet(packet)
 
+
+        # -----------------------------------------------
+        # Save packet to SQLite
+        # -----------------------------------------------
+
+        save_packet_to_database(packet_data)
+
+
+        # -----------------------------------------------
+        # Existing in-memory processing
+        # -----------------------------------------------
+
         with lock:
 
             packets.append(packet_data)
 
+
             if len(packets) > MAX_PACKETS:
+
                 packets.pop(0)
+
 
             total_packets += 1
 
-            protocol_counter[packet_data["protocol"]] += 1
 
-            if packet_data["risk"] in ["HIGH", "CRITICAL"]:
+            protocol_counter[
+                packet_data["protocol"]
+            ] += 1
+
+
+            if packet_data["risk"] in [
+                "HIGH",
+                "CRITICAL"
+            ]:
+
                 alerts += 1
+
+
+            # -------------------------------------------
+            # Keep JSON backup
+            # -------------------------------------------
 
             save_data()
 
+
     except Exception as e:
 
-        print("Packet Processing Error:", e)
+        print(
+            "Packet Processing Error:",
+            e
+        )
+
 
 # ===========================================================
-# SAVE DASHBOARD DATA
+# SAVE DASHBOARD DATA TO JSON
 # ===========================================================
 
 def save_data():
 
     protocol_counts = {
 
-        "TCP": protocol_counter.get("TCP", 0),
-        "UDP": protocol_counter.get("UDP", 0),
-        "HTTP": protocol_counter.get("HTTP", 0),
-        "HTTPS": protocol_counter.get("HTTPS", 0),
-        "DNS": protocol_counter.get("DNS", 0),
-        "ICMP": protocol_counter.get("ICMP", 0),
-        "OTHER": protocol_counter.get("OTHER", 0)
+        "TCP": protocol_counter.get(
+            "TCP",
+            0
+        ),
+
+        "UDP": protocol_counter.get(
+            "UDP",
+            0
+        ),
+
+        "HTTP": protocol_counter.get(
+            "HTTP",
+            0
+        ),
+
+        "HTTPS": protocol_counter.get(
+            "HTTPS",
+            0
+        ),
+
+        "DNS": protocol_counter.get(
+            "DNS",
+            0
+        ),
+
+        "ICMP": protocol_counter.get(
+            "ICMP",
+            0
+        ),
+
+        "OTHER": protocol_counter.get(
+            "OTHER",
+            0
+        )
 
     }
+
+
+    # =======================================================
+    # ACTIVE HOSTS
+    # =======================================================
 
     active_hosts = len({
 
@@ -450,19 +683,35 @@ def save_data():
 
     })
 
+
+    # =======================================================
+    # AVERAGE PACKET SIZE
+    # =======================================================
+
     avg_packet = 0
+
 
     if packets:
 
         avg_packet = round(
 
-            sum(p["length"] for p in packets) / len(packets),
+            sum(
+                p["length"]
+                for p in packets
+            )
+            / len(packets),
 
             2
 
         )
 
+
+    # =======================================================
+    # TOP HOST
+    # =======================================================
+
     top_host = "-"
+
 
     if packets:
 
@@ -476,9 +725,18 @@ def save_data():
 
         )
 
+
         if host_counter:
 
-            top_host = host_counter.most_common(1)[0][0]
+            top_host = (
+                host_counter
+                .most_common(1)[0][0]
+            )
+
+
+    # =======================================================
+    # SECURITY SCORE
+    # =======================================================
 
     security_score = max(
 
@@ -488,15 +746,27 @@ def save_data():
 
     )
 
+
+    # =======================================================
+    # NETWORK HEALTH
+    # =======================================================
+
     network_health = "Healthy"
+
 
     if alerts > 20:
 
         network_health = "Critical"
 
+
     elif alerts > 10:
 
         network_health = "Warning"
+
+
+    # =======================================================
+    # DASHBOARD DATA
+    # =======================================================
 
     dashboard = {
 
@@ -504,23 +774,22 @@ def save_data():
 
             "packets": total_packets,
 
-            "protocols": len(
+            "protocols": len([
 
-                [
+                k
 
-                    k for k, v in protocol_counter.items()
+                for k, v in protocol_counter.items()
 
-                    if v > 0
+                if v > 0
 
-                ]
-
-            ),
+            ]),
 
             "alerts": alerts,
 
             "status": "Monitoring"
 
         },
+
 
         "security": {
 
@@ -536,11 +805,15 @@ def save_data():
 
         },
 
+
         "bandwidth": bandwidth,
+
 
         "protocols": protocol_counts,
 
+
         "packets": packets,
+
 
         "insights": [
 
@@ -549,8 +822,7 @@ def save_data():
                 "title": "Traffic",
 
                 "message":
-
-                f"Captured {total_packets} packets."
+                    f"Captured {total_packets} packets."
 
             },
 
@@ -559,8 +831,7 @@ def save_data():
                 "title": "Threats",
 
                 "message":
-
-                f"{alerts} suspicious packets detected."
+                    f"{alerts} suspicious packets detected."
 
             },
 
@@ -569,14 +840,10 @@ def save_data():
                 "title": "Top Protocol",
 
                 "message":
-
-                max(
-
-                    protocol_counts,
-
-                    key=protocol_counts.get
-
-                )
+                    max(
+                        protocol_counts,
+                        key=protocol_counts.get
+                    )
 
             }
 
@@ -584,31 +851,38 @@ def save_data():
 
     }
 
-    os.makedirs(
 
-        os.path.dirname(DATA_FILE),
+    # =======================================================
+    # SAVE JSON BACKUP
+    # =======================================================
 
-        exist_ok=True
+    try:
 
-    )
-
-    with open(
-
-        DATA_FILE,
-
-        "w"
-
-    ) as f:
-
-        json.dump(
-
-            dashboard,
-
-            f,
-
-            indent=4
-
+        os.makedirs(
+            os.path.dirname(DATA_FILE),
+            exist_ok=True
         )
+
+
+        with open(
+            DATA_FILE,
+            "w"
+        ) as f:
+
+            json.dump(
+                dashboard,
+                f,
+                indent=4
+            )
+
+
+    except Exception as e:
+
+        print(
+            "JSON Save Error:",
+            e
+        )
+
 
 # ===========================================================
 # START SNIFFING
@@ -616,19 +890,40 @@ def save_data():
 
 def sniff_packets():
 
-    sniff(
+    try:
 
-        prn=process_packet,
+        sniff(
 
-        store=False
+            prn=process_packet,
 
-    )
+            store=False
+
+        )
+
+    except Exception as e:
+
+        print(
+            "Packet Capture Error:",
+            e
+        )
+
 
 # ===========================================================
 # START CAPTURE ENGINE
 # ===========================================================
 
 def start_capture():
+
+    # -----------------------------------------------
+    # Make sure SQLite database exists
+    # -----------------------------------------------
+
+    initialize_database()
+
+
+    # -----------------------------------------------
+    # Start bandwidth monitoring
+    # -----------------------------------------------
 
     threading.Thread(
 
@@ -638,6 +933,11 @@ def start_capture():
 
     ).start()
 
+
+    # -----------------------------------------------
+    # Start packet capture
+    # -----------------------------------------------
+
     threading.Thread(
 
         target=sniff_packets,
@@ -646,10 +946,27 @@ def start_capture():
 
     ).start()
 
-    print("===================================")
-    print(" Smart Packet Analyzer Started")
-    print(" Capturing Network Traffic...")
-    print("===================================")
+
+    print(
+        "==================================="
+    )
+
+    print(
+        " Smart Packet Analyzer Started"
+    )
+
+    print(
+        " Capturing Network Traffic..."
+    )
+
+    print(
+        " SQLite Database Enabled"
+    )
+
+    print(
+        "==================================="
+    )
+
 
 # ===========================================================
 # MAIN
@@ -658,6 +975,7 @@ def start_capture():
 if __name__ == "__main__":
 
     start_capture()
+
 
     while True:
 
